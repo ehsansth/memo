@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_PRISMA_URL")
+}
+
+model User {
+  id         String   @id @default(cuid())
+  auth0Id    String   @unique
+  email      String   @unique
+  role       Role     @default(CAREGIVER)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  caregivers CaregiverProfile?
+  patients   PatientProfile?
+}
+
+enum Role {
+  CAREGIVER
+  PATIENT
+}
+
+model CaregiverProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  patients  PatientProfile[] @relation("CaregiverPatients")
+}
+
+model PatientProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  caregivers  CaregiverProfile[] @relation("CaregiverPatients")
+  memories    Memory[]
+  schedules   Schedule[]
+}
+
+model Memory {
+  id           String   @id @default(cuid())
+  patientId    String
+  patient      PatientProfile @relation(fields: [patientId], references: [id])
+  title        String
+  imageUrl     String
+  captionAI    String?
+  tagsAI       String[] @default([])
+  captionEdited String?
+  tagsEdited   String[] @default([])
+  embedding    Bytes? // image/text embedding for similarity
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  reviews      Review[]
+  schedules    Schedule[] @relation("ScheduleMemory")
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  memoryId   String
+  memory     Memory   @relation(fields: [memoryId], references: [id])
+  promptedAt DateTime @default(now())
+  success    Boolean
+  latencyMs  Int?
+}
+
+model Schedule {
+  id           String   @id @default(cuid())
+  patientId    String
+  patient      PatientProfile @relation(fields: [patientId], references: [id])
+  memoryId     String?
+  memory       Memory?  @relation("ScheduleMemory", fields: [memoryId], references: [id])
+  nextAt       DateTime
+  intervalMin  Int      // current interval (minutes)
+  streak       Int      @default(0) // consecutive successes
+  active       Boolean  @default(true)
+  updatedAt    DateTime @updatedAt
+}
