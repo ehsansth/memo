@@ -2,7 +2,7 @@ import "./globals.css"
 import TopNav from "@/components/nav/TopNav"
 import { Toaster } from "@/components/ui/sonner"
 
-export const metadata = { title: "MemoryBuddy", description: "AI-assisted memory reinforcement" }
+export const metadata = { title: "memo", description: "AI-assisted memory reinforcement" }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
