@@ -24,8 +24,8 @@ export async function POST(req: NextRequest) {
   }
 
   const prompt = `Return two lines:
-1) A short factual caption (<=18 words).
-2) 5-8 lowercase tags (comma separated, no '#'). Avoid guessing identities.`;
+  A short factual caption (<=18 words).
+  5-8 lowercase tags (comma separated, no '#'). Avoid guessing identities.`;
 
   const r = await visionModel.generateContent([
     { text: prompt },

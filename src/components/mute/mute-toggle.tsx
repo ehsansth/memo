@@ -12,7 +12,7 @@ export default function MuteToggle() {
       variant="ghost"
       size="icon"
       onClick={() => setMuted(!muted)}
-      className="rounded-40px hover:bg-neutral-200 dark:hover:bg-neutral-800 transition"
+      className="rounded-40px hover:bg-neutral-200 dark:hover:bg-accent transition"
       aria-label={muted ? "Unmute" : "Mute"}
     >
       {muted ? (

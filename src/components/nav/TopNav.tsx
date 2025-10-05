@@ -1,3 +1,4 @@
+//memo/src/components/nav/TopNav.tsx
 'use client'
 
 import Link from 'next/link'
@@ -27,38 +28,49 @@ export default function TopNav() {
     return () => abort.abort()
   }, [])
 
+  const isCaregiver = user?.role === 'CAREGIVER'
+  const isPatient = user?.role === 'PATIENT'
+  const patientHref = isCaregiver ? '/caregiver/patients' : '/patient/quiz'
+
   return (
     <header>
       <div className="flex items-center justify-between py-3 px-8">
         {/* LEFT SIDE — LOGO */}
         <div className="flex-shrink-0">
           <h1 className="text-4xl font-semibold">
-            <Link href="/">memo</Link>
+            <Link href="/">memo.</Link>
           </h1>
         </div>
 
         {/* CENTER — NAV LINKS */}
         <nav className="absolute left-1/2 transform -translate-x-1/2 flex gap-8 text-sm">
           <Link href="/">Home</Link>
+          {isPatient ? (
+            <span
+              className="pointer-events-none cursor-not-allowed text-muted-foreground"
+              title="Switch to a caregiver account to access this view"
+              aria-disabled
+            >
+              Caregiver
+            </span>
+          ) : (
+            <Link
+              href="/caregiver"
+              title={isCaregiver ? '' : 'Login as caregiver to access'}
+              className={!isCaregiver ? 'text-muted-foreground hover:text-foreground' : undefined}
+            >
+              Caregiver
+            </Link>
+          )}
           <Link
-            href="/caregiver"
-            className={user?.role === 'CAREGIVER' ? '' : 'opacity-60 pointer-events-none'}
-            aria-disabled={user?.role !== 'CAREGIVER'}
-            tabIndex={user?.role === 'CAREGIVER' ? 0 : -1}
-            title={user?.role === 'CAREGIVER' ? '' : 'Login as caregiver to access'}
-          >
-            Caregiver
-          </Link>
-          <Link
-            href="/patient/quiz"
-            className={user?.role === 'PATIENT' ? '' : 'opacity-60 pointer-events-none'}
-            aria-disabled={user?.role !== 'PATIENT'}
-            tabIndex={user?.role === 'PATIENT' ? 0 : -1}
-            title={user?.role === 'PATIENT' ? '' : 'Login as patient to access'}
+            href={patientHref}
+            title={isPatient ? '' : isCaregiver ? 'View patient insights' : 'Login as patient to access'}
+            className={!isPatient && !isCaregiver ? 'text-muted-foreground hover:text-foreground' : undefined}
           >
             Patient
           </Link>
         </nav>
+
 
         {/* RIGHT SIDE — USER INFO + TOGGLES */}
         {/* RIGHT SIDE — USER INFO + TOGGLES */}
@@ -123,7 +135,7 @@ export default function TopNav() {
               )}
             </>
           )}
-          <MuteToggle />
+          
           <ThemeToggle />
         </div>
       </div>
