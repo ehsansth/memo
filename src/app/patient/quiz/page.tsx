@@ -36,6 +36,8 @@ export default function PatientQuizPage() {
   const [loading, setLoading] = useState(true);
   const [showHint, setShowHint] = useState(false);
   const [reading, setReading] = useState(false); // global reading state
+  const [answerPending, setAnswerPending] = useState(false);
+  const [correctCount, setCorrectCount] = useState(0);
   const FEEDBACK_DELAY_MS = 2600;
   const ERROR_FEEDBACK_DELAY_MS = 3600;
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -111,6 +113,9 @@ export default function PatientQuizPage() {
           setSession(js);
           setI(0);
           setShowHint(false);
+          setFeedback("");
+          setCorrectCount(0);
+          setAnswerPending(false);
         }
       } catch (e: any) {
         if (!cancelled) setErr(e?.message || "Failed to start quiz");
@@ -140,10 +145,12 @@ export default function PatientQuizPage() {
       audioRef.current = null;
     }
     setReading(false);
+    setAnswerPending(false);
   }, [i]);
 
   async function handleAnswer(idx: number) {
-    if (!session || !q) return;
+    if (!session || !q || answerPending) return;
+    setAnswerPending(true);
     try {
       const res = await fetch("/api/quiz/answer", {
         method: "POST",
@@ -160,15 +167,23 @@ export default function PatientQuizPage() {
         payload.supportive ??
         (payload.correct ? "✅ Correct!" : "Thanks for trying!");
 
+      if (payload.correct) {
+        setCorrectCount((prev) => prev + 1);
+      }
+
       setFeedback(supportive);
       setTimeout(() => {
         setFeedback("");
         setShowHint(false);
         setI((x) => x + 1);
+        setAnswerPending(false);
       }, FEEDBACK_DELAY_MS);
     } catch (e: any) {
       setFeedback(e?.message || "Something went wrong submitting your answer.");
-      setTimeout(() => setFeedback(""), ERROR_FEEDBACK_DELAY_MS);
+      setTimeout(() => {
+        setFeedback("");
+        setAnswerPending(false);
+      }, ERROR_FEEDBACK_DELAY_MS);
     }
   }
 
@@ -201,13 +216,19 @@ export default function PatientQuizPage() {
       </div>
     );
 
-  /* ---------- NEW: Session complete screen replaces "All done" ---------- */
-  if (session && i >= (session.questions?.length || 0))
+  const totalQuestions = session?.questions?.length || 0;
+  const scorePercent = totalQuestions ? Math.round((correctCount / totalQuestions) * 100) : 0;
+
+  /* ---------- Session complete screen ---------- */
+  if (session && i >= totalQuestions && totalQuestions > 0)
     return (
       <div className="text-center mt-40">
         <h1 className="text-4xl font-bold">Session Complete!</h1>
         <p className="mt-2 text-lg font-semibold text-muted-foreground">
           Great job! You’ve finished your quiz.
+        </p>
+        <p className="mt-4 text-base text-muted-foreground">
+          You answered <span className="font-semibold text-primary">{correctCount}</span> out of {totalQuestions} correctly ({scorePercent}%).
         </p>
 
         <div className="mt-10 flex flex-col items-center justify-center gap-6">
@@ -222,7 +243,7 @@ export default function PatientQuizPage() {
     );
   /* --------------------------------------------------------------------- */
 
-  const pct = Math.round((i / (session?.questions.length || 1)) * 100);
+  const pct = totalQuestions > 0 ? Math.round((i / totalQuestions) * 100) : 0;
   const imgSrc = q?.imageDataUrl || "/placeholder.svg";
   const altText = q?.context?.captionAI || q?.context?.personName || "memory";
 
@@ -231,12 +252,17 @@ export default function PatientQuizPage() {
       {/* Progress */}
       <div>
         <div className="mb-1 text-sm opacity-70">
-          Question {i + 1} / {session?.questions.length || 0}
+          Question {Math.min(i + 1, totalQuestions)} / {totalQuestions}
         </div>
         <Progress
           value={pct}
           className="[&>div]:transition-all [&>div]:duration-700 [&>div]:ease-in-out"
         />
+        {totalQuestions > 0 && (
+          <div className="mt-1 text-xs text-muted-foreground">
+            Score so far: {correctCount} / {totalQuestions}
+          </div>
+        )}
       </div>
 
       {/* Quiz Card */}
@@ -278,6 +304,7 @@ export default function PatientQuizPage() {
                 variant="outline"
                 className="justify-start"
                 onClick={() => handleAnswer(idx)}
+                disabled={answerPending}
               >
                 {opt}
               </Button>
@@ -291,6 +318,7 @@ export default function PatientQuizPage() {
                 variant="outline"
                 className="mt-4 h-10 mx-auto flex items-center justify-center"
                 onClick={() => setShowHint(true)}
+                disabled={answerPending}
               >
                 Show Hint
               </Button>
@@ -301,7 +329,7 @@ export default function PatientQuizPage() {
               <button
                 onClick={() => speakHint(q!)}
                 aria-label="Play hint aloud"
-                disabled={reading}
+                disabled={reading || answerPending}
                 className={`rounded-md p-2 transition-colors ${
                   reading ? "opacity-60 cursor-not-allowed" : "hover:bg-accent"
                 }`}

@@ -292,6 +292,7 @@ Return strict JSON: {"question": string, "options": string[4], "correctIndex": 0
     createdAt: new Date(),
     status: "active" as const,
     questions,
+    history: [] as any[],
   };
   await db.collection("quiz_sessions").doc(sessionId).set(sessionDoc);
 
