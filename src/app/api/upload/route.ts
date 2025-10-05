@@ -4,7 +4,7 @@ import { uploadToBlob } from '@/lib/blob';
 import { prisma } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
-  const user = await requireUser(req);
+  await requireUser();
   const form = await req.formData();
   const file = form.get('file') as File;
   const patientId = form.get('patientId') as string;

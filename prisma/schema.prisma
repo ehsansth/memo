@@ -1,80 +1,34 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+enum Role { CAREGIVER PATIENT }
 
 model User {
-  id         String   @id @default(cuid())
-  auth0Id    String   @unique
-  email      String   @unique
-  role       Role     @default(CAREGIVER)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  caregivers CaregiverProfile?
-  patients   PatientProfile?
-}
-
-enum Role {
-  CAREGIVER
-  PATIENT
-}
-
-model CaregiverProfile {
   id        String   @id @default(cuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
-  patients  PatientProfile[] @relation("CaregiverPatients")
+  auth0Id   String   @unique
+  email     String   @unique
+  role      Role     @default(CAREGIVER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  caregiverLinks CaregiverPatient[] @relation("CaregiverLinks")
+  patientLinks   CaregiverPatient[] @relation("PatientLinks")
 }
 
-model PatientProfile {
+model CaregiverPatient {
+  id          String @id @default(cuid())
+  caregiver   User   @relation("CaregiverLinks", fields: [caregiverId], references: [id])
+  caregiverId String
+  patient     User   @relation("PatientLinks", fields: [patientId], references: [id])
+  patientId   String
+  createdAt   DateTime @default(now())
+
+  @@unique([caregiverId, patientId])
+}
+
+model Invite {
   id          String   @id @default(cuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id])
-  caregivers  CaregiverProfile[] @relation("CaregiverPatients")
-  memories    Memory[]
-  schedules   Schedule[]
-}
-
-model Memory {
-  id           String   @id @default(cuid())
-  patientId    String
-  patient      PatientProfile @relation(fields: [patientId], references: [id])
-  title        String
-  imageUrl     String
-  captionAI    String?
-  tagsAI       String[] @default([])
-  captionEdited String?
-  tagsEdited   String[] @default([])
-  embedding    Bytes? // image/text embedding for similarity
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  reviews      Review[]
-  schedules    Schedule[] @relation("ScheduleMemory")
-}
-
-model Review {
-  id         String   @id @default(cuid())
-  memoryId   String
-  memory     Memory   @relation(fields: [memoryId], references: [id])
-  promptedAt DateTime @default(now())
-  success    Boolean
-  latencyMs  Int?
-}
-
-model Schedule {
-  id           String   @id @default(cuid())
-  patientId    String
-  patient      PatientProfile @relation(fields: [patientId], references: [id])
-  memoryId     String?
-  memory       Memory?  @relation("ScheduleMemory", fields: [memoryId], references: [id])
-  nextAt       DateTime
-  intervalMin  Int      // current interval (minutes)
-  streak       Int      @default(0) // consecutive successes
-  active       Boolean  @default(true)
-  updatedAt    DateTime @updatedAt
+  token       String   @unique
+  caregiverId String
+  caregiver   User     @relation(fields: [caregiverId], references: [id])
+  used        Boolean  @default(false)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
 }

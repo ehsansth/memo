@@ -3,8 +3,15 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import type { Memory } from "@/lib/types"
 
-export default function UploadForm({ onCreate }: { onCreate: (file: File, meta: any) => void }) {
+type MemoryMetadata = Pick<Memory, "personName" | "eventName" | "placeName">
+
+type UploadFormProps = {
+  onCreate?: (file: File, meta: MemoryMetadata) => void
+}
+
+export default function UploadForm({ onCreate }: UploadFormProps) {
   const [file, setFile] = useState<File | null>(null)
   const [personName, setPerson] = useState("")
   const [eventName, setEvent] = useState("")
@@ -23,7 +30,13 @@ export default function UploadForm({ onCreate }: { onCreate: (file: File, meta: 
           <div><Label>Place</Label><Input value={placeName} onChange={e=>setPlace(e.target.value)} placeholder="Chicago" /></div>
         </div>
       </div>
-      <Button className="mt-4" disabled={!file} onClick={()=> file && onCreate(file, { personName, eventName, placeName })}>
+      <Button
+        className="mt-4"
+        disabled={!file}
+        onClick={() => {
+          if (file) onCreate?.(file, { personName, eventName, placeName })
+        }}
+      >
         Save memory
       </Button>
     </div>

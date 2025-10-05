@@ -1,27 +1,19 @@
-"use client"
-import { useEffect, useState } from "react"
-import { listMemories, uploadMemory } from "@/lib/api.mock"
-import UploadForm from "@/components/caregiver/UploadForm"
-import MemoryCard from "@/components/caregiver/MemoryCard"
-import type { Memory } from "@/lib/types"
-import { toast } from "sonner"
+import { requireRole } from '@/lib/guards';
+import UploadForm from '@/components/caregiver/UploadForm';
+import MemoryCard from '@/components/caregiver/MemoryCard';
+import { listMemories } from '@/lib/api.mock'; // replace with real API later
 
-export default function CaregiverPage() {
-  const [memories, setMemories] = useState<Memory[]>([])
-  useEffect(() => { listMemories().then(setMemories) }, [])
-
-  async function handleCreate(file: File, meta: Partial<Memory>) {
-    const m = await uploadMemory(file, meta)
-    setMemories(prev => [m, ...prev])
-    toast.success("Memory saved")
-  }
-
+export default async function CaregiverPage() {
+  await requireRole(['CAREGIVER']); // redirect/throw if not caregiver
+  const memories = await listMemories();
   return (
     <div className="grid gap-6">
-      <UploadForm onCreate={handleCreate} />
+      <UploadForm />
       <div className="grid gap-4 md:grid-cols-3">
-        {memories.map(m => <MemoryCard key={m.id} m={m} />)}
+        {memories.map(memory => (
+          <MemoryCard key={memory.id} m={memory} />
+        ))}
       </div>
     </div>
-  )
+  );
 }
