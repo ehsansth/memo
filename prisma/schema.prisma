@@ -1,4 +1,16 @@
-enum Role { CAREGIVER PATIENT }
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CAREGIVER
+  PATIENT
+}
 
 model User {
   id        String   @id @default(cuid())
@@ -10,6 +22,8 @@ model User {
 
   caregiverLinks CaregiverPatient[] @relation("CaregiverLinks")
   patientLinks   CaregiverPatient[] @relation("PatientLinks")
+  invites        Invite[]           @relation("CaregiverInvites")
+  memories       Memory[]
 }
 
 model CaregiverPatient {
@@ -27,8 +41,22 @@ model Invite {
   id          String   @id @default(cuid())
   token       String   @unique
   caregiverId String
-  caregiver   User     @relation(fields: [caregiverId], references: [id])
+  caregiver   User     @relation("CaregiverInvites", fields: [caregiverId], references: [id])
   used        Boolean  @default(false)
   expiresAt   DateTime
   createdAt   DateTime @default(now())
+}
+
+model Memory {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  title      String
+  personName String?
+  eventName  String?
+  placeName  String?
+  date       DateTime?
+  imageUrl   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }

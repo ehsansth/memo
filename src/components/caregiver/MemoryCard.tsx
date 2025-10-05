@@ -15,6 +15,7 @@ export default function MemoryCard({ m }: { m: Memory }) {
             className="rounded-xl object-cover"
           />
         </div>
+        <h3 className="mt-2 font-semibold">{m.title}</h3>
         <div className="mt-2 text-sm">
           {m.personName && <span className="mr-2 rounded-full border px-2 py-0.5">👤 {m.personName}</span>}
           {m.eventName &&  <span className="mr-2 rounded-full border px-2 py-0.5">🎉 {m.eventName}</span>}

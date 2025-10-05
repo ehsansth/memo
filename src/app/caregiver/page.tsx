@@ -1,11 +1,25 @@
-import { requireRole } from '@/lib/guards';
 import UploadForm from '@/components/caregiver/UploadForm';
 import MemoryCard from '@/components/caregiver/MemoryCard';
-import { listMemories } from '@/lib/api.mock'; // replace with real API later
+import { prisma } from '@/lib/db';
+import { requireRole } from '@/lib/guards';
+import type { Memory } from '@/lib/types';
 
 export default async function CaregiverPage() {
-  await requireRole(['CAREGIVER']); // redirect/throw if not caregiver
-  const memories = await listMemories();
+  const user = await requireRole(['CAREGIVER']);
+  const memoriesFromDb = await prisma.memory.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const memories: Memory[] = memoriesFromDb.map(memory => ({
+    id: memory.id,
+    title: memory.title,
+    imageUrl: memory.imageUrl,
+    personName: memory.personName ?? undefined,
+    eventName: memory.eventName ?? undefined,
+    placeName: memory.placeName ?? undefined,
+  }));
+
   return (
     <div className="grid gap-6">
       <UploadForm />
@@ -13,6 +27,9 @@ export default async function CaregiverPage() {
         {memories.map(memory => (
           <MemoryCard key={memory.id} m={memory} />
         ))}
+        {!memories.length && (
+          <p className="text-sm text-muted-foreground">Add a photo to start building MemoryBuddy prompts.</p>
+        )}
       </div>
     </div>
   );

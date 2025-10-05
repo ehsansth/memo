@@ -1,5 +1,6 @@
 export type Memory = {
   id: string
+  title: string
   imageUrl: string
   personName?: string
   eventName?: string
