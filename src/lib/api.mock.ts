@@ -1,11 +1,43 @@
-import type { Memory, SessionQuestion } from "./types"
+import type { Memory, SessionQuestion } from "./types";
+
+const demoCaregiver = "demo-caregiver";
+const demoPatient = "demo-patient";
 
 export async function listMemories(): Promise<Memory[]> {
-  return [{ id: "1", imageUrl: "/placeholder.svg", personName: "Anna", eventName: "Wedding", placeName: "Chicago" }]
+  return [
+    {
+      id: "1",
+      caregiverSub: demoCaregiver,
+      patientId: demoPatient,
+      title: "Anna's big day",
+      imageUrl: "/placeholder.svg",
+      personName: "Anna",
+      eventName: "Wedding",
+      placeName: "Chicago",
+      dateLabel: "June 2020",
+      captionAI: null,
+      tagsAI: "family, wedding",
+      createdAt: new Date(),
+    },
+  ];
 }
 
 export async function uploadMemory(_: File, meta: Partial<Memory>) {
-  return { id: crypto.randomUUID(), imageUrl: "/placeholder.svg", ...meta }
+  const id = crypto.randomUUID();
+  return {
+    id,
+    caregiverSub: demoCaregiver,
+    patientId: demoPatient,
+    title: meta.title || "New memory",
+    imageUrl: "/placeholder.svg",
+    personName: meta.personName ?? null,
+    eventName: meta.eventName ?? null,
+    placeName: meta.placeName ?? null,
+    dateLabel: meta.dateLabel ?? null,
+    captionAI: meta.captionAI ?? null,
+    tagsAI: meta.tagsAI ?? null,
+    createdAt: new Date(),
+  } satisfies Memory;
 }
 
 export async function startSession() {
