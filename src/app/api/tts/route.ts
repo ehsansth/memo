@@ -87,8 +87,9 @@ type TTSBody = {
         status: 200,
         headers: { "Content-Type": "audio/mpeg", "Cache-Control": "no-store" }
       });
-    } catch (e: any) {
-      return jsonError(e?.message || "TTS route failed", 500);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "TTS route failed";
+      return jsonError(message, 500);
     }
   }
   
