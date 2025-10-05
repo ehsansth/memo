@@ -35,7 +35,9 @@ export default function PatientQuizPage() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
   const [showHint, setShowHint] = useState(false);
-  const [reading, setReading] = useState(false);     // global reading state
+  const [reading, setReading] = useState(false); // global reading state
+  const FEEDBACK_DELAY_MS = 2600;
+  const ERROR_FEEDBACK_DELAY_MS = 3600;
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // ---- generic TTS (used by both question/options and hint) ----
@@ -163,10 +165,10 @@ export default function PatientQuizPage() {
         setFeedback("");
         setShowHint(false);
         setI((x) => x + 1);
-      }, 1200);
+      }, FEEDBACK_DELAY_MS);
     } catch (e: any) {
       setFeedback(e?.message || "Something went wrong submitting your answer.");
-      setTimeout(() => setFeedback(""), 1600);
+      setTimeout(() => setFeedback(""), ERROR_FEEDBACK_DELAY_MS);
     }
   }
 
