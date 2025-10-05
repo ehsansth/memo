@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
 import { visionModel } from '@/lib/ai';
-import { prisma } from '@/lib/db';
 import { embedText } from '@/lib/embeddings';
 
 export async function POST(req: NextRequest) {
@@ -27,17 +26,7 @@ Avoid guessing identities.`;
     .map(t => t.trim().toLowerCase())
     .filter(Boolean);
 
-  // optional: embed caption for later similarity/pseudoface clustering
-  const emb = caption ? await embedText(caption) : null;
-
-  await prisma.memory.update({
-    where: { id: memoryId },
-    data: {
-      captionAI: caption,
-      tagsAI: tags,
-      embedding: emb ? Buffer.from(emb.buffer) : null
-    }
-  });
+  
 
   return Response.json({ ok: true, caption, tags });
 }
