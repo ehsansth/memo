@@ -30,6 +30,7 @@ export default function TopNav() {
 
   const isCaregiver = user?.role === 'CAREGIVER'
   const isPatient = user?.role === 'PATIENT'
+  const isSignedIn = Boolean(user)
   const patientHref = isCaregiver ? '/caregiver/patients' : '/patient/quiz'
 
   return (
@@ -45,30 +46,39 @@ export default function TopNav() {
         {/* CENTER — NAV LINKS */}
         <nav className="absolute left-1/2 transform -translate-x-1/2 flex gap-8 text-sm">
           <Link href="/">Home</Link>
-          {isPatient ? (
-            <span
-              className="pointer-events-none cursor-not-allowed text-muted-foreground"
-              title="Switch to a caregiver account to access this view"
-              aria-disabled
-            >
-              Caregiver
-            </span>
+          {!isSignedIn ? (
+            <>
+              <Link href="/#about">About</Link>
+              <Link href="/#contact">Contact</Link>
+            </>
           ) : (
-            <Link
-              href="/caregiver"
-              title={isCaregiver ? '' : 'Login as caregiver to access'}
-              className={!isCaregiver ? 'text-muted-foreground hover:text-foreground' : undefined}
-            >
-              Caregiver
-            </Link>
+            <>
+              {isPatient ? (
+                <span
+                  className="pointer-events-none cursor-not-allowed text-muted-foreground"
+                  title="Switch to a caregiver account to access this view"
+                  aria-disabled
+                >
+                  Caregiver
+                </span>
+              ) : (
+                <Link
+                  href="/caregiver"
+                  title={isCaregiver ? '' : 'Login as caregiver to access'}
+                  className={!isCaregiver ? 'text-muted-foreground hover:text-foreground' : undefined}
+                >
+                  Caregiver
+                </Link>
+              )}
+              <Link
+                href={patientHref}
+                title={isPatient ? '' : isCaregiver ? 'View patient insights' : 'Login as patient to access'}
+                className={!isPatient && !isCaregiver ? 'text-muted-foreground hover:text-foreground' : undefined}
+              >
+                Patient
+              </Link>
+            </>
           )}
-          <Link
-            href={patientHref}
-            title={isPatient ? '' : isCaregiver ? 'View patient insights' : 'Login as patient to access'}
-            className={!isPatient && !isCaregiver ? 'text-muted-foreground hover:text-foreground' : undefined}
-          >
-            Patient
-          </Link>
         </nav>
 
 
@@ -88,16 +98,6 @@ export default function TopNav() {
                 </Link>
               </Button>
 
-              <Button
-                asChild
-                variant="outline"
-                size="sm"
-                className="rounded-md px-4 py-2 font-medium hover:bg-neutral-200 dark:hover:bg-neutral-700 transition"
-              >
-                <Link href="/auth/login?screen_hint=signup" prefetch={false}>
-                  Sign Up
-                </Link>
-              </Button>
             </>
           )}
 
@@ -127,7 +127,7 @@ export default function TopNav() {
 
               {/* Profile Popup */}
               {showProfile && user && (
-                <div className="absolute top-12 right-0 w-72 bg-white dark:bg-neutral-900 border dark:border-neutral-700 rounded-lg shadow-md p-4 text-sm w-60">
+                <div className="absolute top-12 right-0 z-50 w-72 bg-white dark:bg-neutral-900 border dark:border-neutral-700 rounded-lg shadow-md p-4 text-sm w-60">
                   <p className="font-medium mb-1">Profile</p>
                   <p className="text-gray-700 dark:text-gray-300 break-all">Email: {user.name ?? "Unknown"}</p>
                   <p className="text-gray-500 dark:text-gray-400 mt-1">Role: {user.role ?? "Unknown"}</p>
