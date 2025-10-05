@@ -28,6 +28,9 @@ export default function TopNav() {
     return () => abort.abort()
   }, [])
 
+  const isCaregiver = user?.role === 'CAREGIVER'
+  const isPatient = user?.role === 'PATIENT'
+
   return (
     <header>
       <div className="flex items-center justify-between py-3 px-8">
@@ -41,15 +44,27 @@ export default function TopNav() {
         {/* CENTER — NAV LINKS */}
         <nav className="absolute left-1/2 transform -translate-x-1/2 flex gap-8 text-sm">
           <Link href="/">Home</Link>
-          <Link
-            href="/caregiver"
-            title={user?.role === 'CAREGIVER' ? '' : 'Login as caregiver to access'}
-          >
-            Caregiver
-          </Link>
+          {isPatient ? (
+            <span
+              className="pointer-events-none cursor-not-allowed text-muted-foreground"
+              title="Switch to a caregiver account to access this view"
+              aria-disabled
+            >
+              Caregiver
+            </span>
+          ) : (
+            <Link
+              href="/caregiver"
+              title={isCaregiver ? '' : 'Login as caregiver to access'}
+              className={!isCaregiver ? 'text-muted-foreground hover:text-foreground' : undefined}
+            >
+              Caregiver
+            </Link>
+          )}
           <Link
             href="/patient/quiz"
-            title={user?.role === 'PATIENT' ? '' : 'Login as patient to access'}
+            title={isPatient ? '' : 'Login as patient to access'}
+            className={!isPatient ? 'text-muted-foreground hover:text-foreground' : undefined}
           >
             Patient
           </Link>

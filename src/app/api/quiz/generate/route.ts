@@ -2,6 +2,7 @@
 import { NextRequest } from "next/server";
 import { requireRole } from "@/lib/guards";
 import { db } from "@/lib/firebase-admin";
+import { getPatientById, getPatientForCaregiver } from "@/lib/db-firestore";
 import { v4 as uuid } from "uuid";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -124,20 +125,49 @@ export async function POST(req: NextRequest) {
     return json({ error: e?.message || "unauthorized" }, 401);
   }
 
+  const auth0Sub = user.auth0Id || user.id;
+
   // 2) Body
   let body: any = {};
-  try { body = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
+  try {
+    body = await req.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400);
+  }
   const { patientId, memoryIds, limit = 4 } = body || {};
-  if (!patientId) return json({ error: "patientId required" }, 400);
+  const resolvedPatientId = typeof patientId === "string" ? patientId.trim() : "";
+  if (!resolvedPatientId) return json({ error: "patientId required" }, 400);
+
+  let caregiverSub: string | null = null;
+  try {
+    if (user.role === "CAREGIVER") {
+      const patient = await getPatientForCaregiver(resolvedPatientId, auth0Sub);
+      if (!patient) return json({ error: "Patient not found" }, 404);
+      caregiverSub = auth0Sub;
+    } else {
+      const patient = await getPatientById(resolvedPatientId);
+      if (!patient || patient.patientSub !== auth0Sub) {
+        return json({ error: "Patient not found" }, 404);
+      }
+      caregiverSub = patient.caregiverSub;
+    }
+  } catch (err) {
+    return json({ error: (err as Error).message || "Unable to load patient" }, 400);
+  }
+
+  if (!caregiverSub) return json({ error: "Unable to resolve caregiver" }, 500);
 
   // 3) Resolve memory IDs (no composite index requirements)
   let memIds: string[] = Array.isArray(memoryIds) ? memoryIds : [];
   if (memIds.length === 0) {
-    const snap = await db.collection("memories")
-      .where("ownerSub", "==", user.auth0Id || user.id)
-      .limit(Math.max(1, Math.min(10, limit)))
+    const snap = await db
+      .collection("memories")
+      .where("caregiverSub", "==", caregiverSub)
+      .where("patientId", "==", resolvedPatientId)
+      .orderBy("createdAt", "desc")
+      .limit(Math.max(1, Math.min(10, Number(limit) || 4)))
       .get();
-    memIds = snap.docs.map(d => d.id);
+    memIds = snap.docs.map((d) => d.id);
   }
   if (memIds.length === 0) return json({ error: "No memories found" }, 404);
 
@@ -146,8 +176,9 @@ export async function POST(req: NextRequest) {
     const doc = await db.collection("memories").doc(id).get();
     if (!doc.exists) return null;
     const data = doc.data()!;
-    const ownerSub = user.auth0Id || user.id;
-    if (data.ownerSub !== ownerSub) return null;
+    if (data.caregiverSub !== caregiverSub || data.patientId !== resolvedPatientId) {
+      return null;
+    }
     return { id, ...data };
   }));
   const memories = memDocs.filter(Boolean) as Array<{
@@ -253,8 +284,9 @@ Return strict JSON: {"question": string, "options": string[4], "correctIndex": 0
   // 7) Persist session
   const sessionId = uuid();
   const sessionDoc = {
-    ownerSub: user.auth0Id || user.id,
-    patientId,
+    createdBySub: auth0Sub,
+    caregiverSub,
+    patientId: resolvedPatientId,
     memoryIds: questions.map(q => q.memoryId),
   // Use Timestamp if you exported it; Date works for demo
     createdAt: new Date(),

@@ -58,6 +58,17 @@ export async function getPatientById(patientId: string) {
   return fromPatientSnapshot(snapshot.id, snapshot.data() as StoredPatientDoc);
 }
 
+export async function getPatientByPatientSub(patientSub: string) {
+  const snap = await db
+    .collection("patients")
+    .where("patientSub", "==", patientSub)
+    .limit(1)
+    .get();
+  if (snap.empty) return null;
+  const doc = snap.docs[0];
+  return fromPatientSnapshot(doc.id, doc.data() as StoredPatientDoc);
+}
+
 export async function getPatientForCaregiver(patientId: string, caregiverSub: string) {
   const patient = await getPatientById(patientId);
   if (!patient || patient.caregiverSub !== caregiverSub) return null;

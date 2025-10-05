@@ -85,11 +85,22 @@ export default function PatientQuizPage() {
       setLoading(true);
       setErr("");
       try {
+        const patientRes = await fetch("/api/patients/me", {
+          cache: "no-store",
+        });
+        if (!patientRes.ok) {
+          const msg = patientRes.status === 404 ? "No patient profile linked." : `Unable to load profile (${patientRes.status})`;
+          throw new Error(msg);
+        }
+        const patientPayload = await patientRes.json();
+        const patientId = patientPayload?.patient?.id as string | undefined;
+        if (!patientId) throw new Error("Patient profile missing.");
+
         const res = await fetch("/api/quiz/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           cache: "no-store",
-          body: JSON.stringify({ patientId: "demo-patient", limit: 5 }),
+          body: JSON.stringify({ patientId, limit: 5 }),
         });
         if (!res.ok) throw new Error(`Generate failed (${res.status})`);
         const js = (await res.json()) as QuizSession;
