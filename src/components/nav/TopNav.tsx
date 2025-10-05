@@ -7,7 +7,18 @@ export default function TopNav() {
   const [user, setUser] = useState<{name?:string; role?:'CAREGIVER'|'PATIENT'}|null>(null);
 
   useEffect(() => {
-    fetch('/api/me').then(r=>r.json()).then(d=>setUser(d.user ?? null)).catch(()=>setUser(null));
+    const abort = new AbortController();
+    fetch('/api/me', {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store',
+      signal: abort.signal,
+    })
+      .then(r => r.json())
+      .then(d => setUser(d.user ?? null))
+      .catch(() => setUser(null));
+
+    return () => abort.abort();
   }, []);
 
   return (
