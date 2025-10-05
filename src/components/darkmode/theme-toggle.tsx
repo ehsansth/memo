@@ -1,3 +1,4 @@
+//memo/src/components/darkmode/theme-toggle.tsx
 "use client"
 
 import { useTheme } from "next-themes"
@@ -18,7 +19,7 @@ export default function ThemeToggle() {
       size="icon"
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       aria-label="Toggle dark mode"
-      className="text-black dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-700"
+      className="text-black dark:text-white hover:bg-neutral-200 dark:hover:bg-accent"
     >
       {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
     </Button>
