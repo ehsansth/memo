@@ -1,3 +1,4 @@
+//memo/src/components/nav/TopNav.tsx
 'use client'
 
 import Link from 'next/link'
@@ -42,23 +43,18 @@ export default function TopNav() {
           <Link href="/">Home</Link>
           <Link
             href="/caregiver"
-            className={user?.role === 'CAREGIVER' ? '' : 'opacity-60 pointer-events-none'}
-            aria-disabled={user?.role !== 'CAREGIVER'}
-            tabIndex={user?.role === 'CAREGIVER' ? 0 : -1}
             title={user?.role === 'CAREGIVER' ? '' : 'Login as caregiver to access'}
           >
             Caregiver
           </Link>
           <Link
             href="/patient/quiz"
-            className={user?.role === 'PATIENT' ? '' : 'opacity-60 pointer-events-none'}
-            aria-disabled={user?.role !== 'PATIENT'}
-            tabIndex={user?.role === 'PATIENT' ? 0 : -1}
             title={user?.role === 'PATIENT' ? '' : 'Login as patient to access'}
           >
             Patient
           </Link>
         </nav>
+
 
         {/* RIGHT SIDE — USER INFO + TOGGLES */}
         {/* RIGHT SIDE — USER INFO + TOGGLES */}
@@ -123,7 +119,7 @@ export default function TopNav() {
               )}
             </>
           )}
-          <MuteToggle />
+          
           <ThemeToggle />
         </div>
       </div>
