@@ -11,9 +11,9 @@ export async function POST(req: NextRequest) {
     });
     const out = r.response.text();
     return Response.json({ ok: true, out });
-  } catch (err: any) {
+  } catch (err) {
     console.error('text-test error:', err);
-    return new Response(JSON.stringify({ ok: false, error: String(err?.message || err) }), { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    return new Response(JSON.stringify({ ok: false, error: message }), { status: 500 });
   }
 }
- 

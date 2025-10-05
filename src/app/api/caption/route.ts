@@ -1,43 +1,34 @@
-import { NextRequest } from 'next/server';
-import { visionModel } from '@/lib/ai';
-import { prisma } from '@/lib/db';
-import { embedText } from '@/lib/embeddings';
+import { NextRequest } from "next/server";
+import { updateMemory } from "@/lib/db-firestore";
+import { visionModel } from "@/lib/ai";
+import { embedText } from "@/lib/embeddings";
+
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   const { memoryId, imageUrl } = await req.json();
-  if (!memoryId || !imageUrl) return new Response('bad request', { status: 400 });
+  if (!memoryId || !imageUrl) return new Response("bad request", { status: 400 });
 
-  const prompt = `You are helping a caregiver create a gentle memory card. 
-Return:
-- one short, factual caption (<= 18 words)
-- 5-8 lowercase tags (no '#', comma separated), include people/setting/emotion if visible. 
-Avoid guessing identities.`;
+  const prompt = `Return two lines:
+1) A short factual caption (<=18 words).
+2) 5-8 lowercase tags (comma separated, no '#'). Avoid guessing identities.`;
 
-  const result = await visionModel.generateContent([
-    { text: prompt },
-    { inlineData: { data: '', mimeType: 'application/octet-stream' } }, // not needed if URL supported
-    { text: `Image URL: ${imageUrl}` }
-  ]);
+  const r = await visionModel.generateContent([{ text: prompt }, { text: `Image URL: ${imageUrl}` }]);
+  const out = (r.response.text() || "").trim();
+  const [cap = "", tags = ""] = out.split("\n");
+  const caption = cap.replace(/^[-•]\s*/, "").trim();
+  const tagsLine = tags.replace(/^[-•]\s*/, "").trim();
 
-  const text = result.response.text();
-  // simple parse: assume "Caption: ...\nTags: ...".
-  const caption = (/caption:\s*(.+)/i.exec(text)?.[1] ?? '').trim();
-  const tags = (/tags:\s*(.+)/i.exec(text)?.[1] ?? '')
-    .split(',')
-    .map(t => t.trim().toLowerCase())
-    .filter(Boolean);
+  let embedding: number[] | null = null;
+  try {
+    if (caption) embedding = Array.from(await embedText(caption));
+  } catch {}
 
-  // optional: embed caption for later similarity/pseudoface clustering
-  const emb = caption ? await embedText(caption) : null;
-
-  await prisma.memory.update({
-    where: { id: memoryId },
-    data: {
-      captionAI: caption,
-      tagsAI: tags,
-      embedding: emb ? Buffer.from(emb.buffer) : null
-    }
+  await updateMemory(memoryId, {
+    captionAI: caption || null,
+    tagsAI: tagsLine || null,
+    embedding,
   });
 
-  return Response.json({ ok: true, caption, tags });
+  return Response.json({ ok: true, caption, tags: tagsLine });
 }

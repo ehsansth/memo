@@ -25,8 +25,9 @@ export default function TTSTestPage() {
       const blob = await resp.blob();
       const objectUrl = URL.createObjectURL(blob);
       setUrl(objectUrl);
-    } catch (e: any) {
-      setErr(e?.message ?? "TTS failed");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "TTS failed";
+      setErr(message);
     } finally {
       setLoading(false);
     }

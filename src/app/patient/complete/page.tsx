@@ -1,27 +1,13 @@
-import { prisma } from '@/lib/db';
-import { requireUser } from '@/lib/guards';
+import { requireUser } from "@/lib/guards";
+import { consumeInvite, linkCaregiverPatient } from "@/lib/db-firestore";
 
 export default async function Complete({ searchParams }: { searchParams: { token?: string } }) {
   const user = await requireUser();
   const token = searchParams.token;
   if (!token) return <div>Missing invite token.</div>;
 
-  const invite = await prisma.invite.findUnique({ where: { token } });
-  if (!invite || invite.used || invite.expiresAt < new Date()) return <div>Invalid/expired invite.</div>;
-
-  // flip role to PATIENT if needed
-  if (user.role !== 'PATIENT') {
-    await prisma.user.update({ where: { id: user.id }, data: { role: 'PATIENT' } });
-  }
-
-  // link caregiver ↔ patient (many-to-many safe)
-  await prisma.caregiverPatient.upsert({
-    where: { caregiverId_patientId: { caregiverId: invite.caregiverId, patientId: user.id } },
-    create: { caregiverId: invite.caregiverId, patientId: user.id },
-    update: {},
-  });
-
-  await prisma.invite.update({ where: { token }, data: { used: true } });
+  const inv = await consumeInvite(token);
+  await linkCaregiverPatient(inv.caregiverSub, user.auth0Id || user.id);
 
   return (
     <main className="p-6">

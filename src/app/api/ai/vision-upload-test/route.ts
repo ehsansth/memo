@@ -33,8 +33,9 @@ export async function POST(req: Request) {
     const data = JSON.parse(jsonStr);
 
     return Response.json({ ok: true, raw: txt, data });
-  } catch (e: any) {
-    console.error('vision-upload-test:', e);
-    return new Response(JSON.stringify({ ok: false, error: String(e?.message || e) }), { status: 500 });
+  } catch (err) {
+    console.error('vision-upload-test:', err);
+    const message = err instanceof Error ? err.message : String(err);
+    return new Response(JSON.stringify({ ok: false, error: message }), { status: 500 });
   }
 }
