@@ -1,6 +1,6 @@
-import { auth0 } from './auth0';
-
-export type AppRole = 'CAREGIVER' | 'PATIENT';
+import { auth0 } from "./auth0";
+import { getUserRoleDoc, setUserRole } from "./db-firestore";
+import type { AppRole } from "./types";
 
 export type AppUser = {
   id: string;
@@ -10,50 +10,38 @@ export type AppUser = {
   role: AppRole;
 };
 
-function resolveRole(user: Record<string, unknown>): AppRole {
-  const appMetadata = (user['app_metadata'] ?? {}) as Record<string, unknown>;
-  const appMetadataRoles = Array.isArray(appMetadata['roles'])
-    ? (appMetadata['roles'] as unknown[])
-    : [];
-
-  const candidates = [
-    user['role'],
-    appMetadata['role'],
-    appMetadataRoles[0],
-    user['https://memo.app/role'],
-  ].filter((value): value is string => typeof value === 'string');
-
-  for (const raw of candidates) {
-    const normalized = raw.toUpperCase();
-    if (normalized === 'CAREGIVER' || normalized === 'PATIENT') {
-      return normalized;
-    }
-  }
-
-  return 'CAREGIVER';
-}
-
 export async function requireUser(): Promise<AppUser> {
   const session = await auth0.getSession();
-  if (!session?.user) throw new Error('unauthorized');
+  if (!session?.user) throw new Error("unauthorized");
 
-  const auth0Id = session.user.sub ?? 'unknown-auth0-user';
+  const auth0Id = session.user.sub ?? "unknown-auth0-user";
   const email = session.user.email ?? undefined;
   const name = session.user.name ?? undefined;
+  const roleDoc = await getUserRoleDoc(auth0Id);
+  const role: AppRole = roleDoc?.role ?? "CAREGIVER";
 
   return {
     id: auth0Id,
     auth0Id,
     email,
     name,
-    role: resolveRole(session.user as Record<string, unknown>),
+    role,
   };
 }
 
 export async function requireRole(roles: AppRole[]): Promise<AppUser> {
   const user = await requireUser();
-  if (!roles.includes(user.role)) {
-    throw new Error('forbidden');
+  const roleDoc = await getUserRoleDoc(user.auth0Id);
+  let effectiveRole = roleDoc?.role ?? user.role;
+
+  if (!roleDoc && roles.includes("CAREGIVER")) {
+    await setUserRole(user.auth0Id, "CAREGIVER");
+    effectiveRole = "CAREGIVER";
   }
-  return user;
+
+  if (!roles.includes(effectiveRole)) {
+    throw new Error("forbidden");
+  }
+
+  return { ...user, role: effectiveRole };
 }

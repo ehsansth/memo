@@ -1,5 +1,10 @@
 import { requireUser } from "@/lib/guards";
-import { consumeInvite, linkCaregiverPatient } from "@/lib/db-firestore";
+import {
+  consumeInvite,
+  linkCaregiverPatient,
+  linkPatientAccount,
+  setUserRole,
+} from "@/lib/db-firestore";
 
 export default async function Complete({ searchParams }: { searchParams: { token?: string } }) {
   const user = await requireUser();
@@ -7,7 +12,12 @@ export default async function Complete({ searchParams }: { searchParams: { token
   if (!token) return <div>Missing invite token.</div>;
 
   const inv = await consumeInvite(token);
-  await linkCaregiverPatient(inv.caregiverSub, user.auth0Id || user.id);
+  const patientSub = user.auth0Id || user.id;
+  if (inv.patientId) {
+    await linkPatientAccount(inv.caregiverSub, inv.patientId, patientSub);
+  }
+  await setUserRole(patientSub, inv.targetRole || "PATIENT");
+  await linkCaregiverPatient(inv.caregiverSub, patientSub);
 
   return (
     <main className="p-6">
