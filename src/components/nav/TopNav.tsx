@@ -30,6 +30,7 @@ export default function TopNav() {
 
   const isCaregiver = user?.role === 'CAREGIVER'
   const isPatient = user?.role === 'PATIENT'
+  const patientHref = isCaregiver ? '/caregiver/patients' : '/patient/quiz'
 
   return (
     <header>
@@ -62,9 +63,9 @@ export default function TopNav() {
             </Link>
           )}
           <Link
-            href="/patient/quiz"
-            title={isPatient ? '' : 'Login as patient to access'}
-            className={!isPatient ? 'text-muted-foreground hover:text-foreground' : undefined}
+            href={patientHref}
+            title={isPatient ? '' : isCaregiver ? 'View patient insights' : 'Login as patient to access'}
+            className={!isPatient && !isCaregiver ? 'text-muted-foreground hover:text-foreground' : undefined}
           >
             Patient
           </Link>

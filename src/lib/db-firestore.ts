@@ -6,6 +6,8 @@ import type {
   LinkDoc,
   MemoryDoc,
   PatientDoc,
+  QuizResponseDoc,
+  QuizResultDoc,
   UserRoleDoc,
 } from "./types";
 
@@ -21,6 +23,16 @@ type StoredMemoryDoc = Omit<MemoryDoc, "createdAt" | "updatedAt"> & {
 type StoredUserRoleDoc = Omit<UserRoleDoc, "createdAt" | "updatedAt"> & {
   createdAt: Date | Timestamp;
   updatedAt?: Date | Timestamp;
+};
+
+type StoredQuizResponseDoc = Omit<QuizResponseDoc, "answeredAt"> & {
+  answeredAt?: Date | Timestamp | null;
+};
+
+type StoredQuizResultDoc = Omit<QuizResultDoc, "createdAt" | "completedAt" | "responses"> & {
+  createdAt: Date | Timestamp;
+  completedAt?: Date | Timestamp | null;
+  responses: StoredQuizResponseDoc[];
 };
 
 type StoredInviteDoc = Omit<InviteDoc, "createdAt" | "expiresAt"> & {
@@ -50,6 +62,31 @@ function fromUserRoleSnapshot(data: StoredUserRoleDoc) {
     createdAt,
     updatedAt,
   } as UserRoleDoc;
+}
+
+function fromQuizResultSnapshot(id: string, data: StoredQuizResultDoc) {
+  const createdAt = toDate(data.createdAt) ?? new Date();
+  const completedAt = toDate(data.completedAt);
+  const responses: QuizResponseDoc[] = Array.isArray(data.responses)
+    ? data.responses.map((resp) => ({
+        ...resp,
+        answeredAt: toDate(resp.answeredAt ?? undefined),
+      }))
+    : [];
+
+  return {
+    sessionId: id,
+    patientId: data.patientId ?? null,
+    caregiverSub: data.caregiverSub ?? null,
+    createdBySub: data.createdBySub ?? null,
+    totalQuestions: Number(data.totalQuestions ?? 0),
+    answeredCount: Number(data.answeredCount ?? responses.length),
+    correctCount: Number(data.correctCount ?? 0),
+    scorePercent: Number(data.scorePercent ?? 0),
+    responses,
+    createdAt,
+    completedAt,
+  } as QuizResultDoc;
 }
 
 export async function getPatientById(patientId: string) {
@@ -233,4 +270,32 @@ export async function setUserRole(auth0Id: string, role: AppRole) {
     base.createdAt = now;
   }
   await ref.set(base, { merge: true });
+}
+
+export async function getLatestQuizResultForPatient(
+  caregiverSub: string,
+  patientId: string
+) {
+  const snap = await db
+    .collection("quiz_results")
+    .where("caregiverSub", "==", caregiverSub)
+    .where("patientId", "==", patientId)
+    .orderBy("completedAt", "desc")
+    .limit(1)
+    .get();
+
+  if (snap.empty) return null;
+  const doc = snap.docs[0];
+  return fromQuizResultSnapshot(doc.id, doc.data() as StoredQuizResultDoc);
+}
+
+export async function listQuizResultsForCaregiver(caregiverSub: string) {
+  const snap = await db
+    .collection("quiz_results")
+    .where("caregiverSub", "==", caregiverSub)
+    .orderBy("completedAt", "desc")
+    .limit(50)
+    .get();
+
+  return snap.docs.map((doc) => fromQuizResultSnapshot(doc.id, doc.data() as StoredQuizResultDoc));
 }

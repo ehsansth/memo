@@ -45,6 +45,39 @@ export type UserRoleDoc = {
   updatedAt?: Date;
 };
 
+export type QuizResponseDoc = {
+  questionId: string;
+  memoryId: string;
+  prompt: string;
+  options: string[];
+  correctIndex: number;
+  chosenIndex: number | null;
+  correct: boolean;
+  hint?: string | null;
+  context?: {
+    personName?: string | null;
+    eventName?: string | null;
+    placeName?: string | null;
+    captionAI?: string | null;
+  } | null;
+  imageDataUrl: string;
+  answeredAt?: Date | null;
+};
+
+export type QuizResultDoc = {
+  sessionId: string;
+  patientId: string | null;
+  caregiverSub: string | null;
+  createdBySub: string | null;
+  totalQuestions: number;
+  answeredCount: number;
+  correctCount: number;
+  scorePercent: number;
+  responses: QuizResponseDoc[];
+  createdAt: Date;
+  completedAt?: Date | null;
+};
+
 export type LinkDoc = {
   caregiverSub: string;
   patientSub: string;
