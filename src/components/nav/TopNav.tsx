@@ -37,7 +37,7 @@ export default function TopNav() {
         {/* LEFT SIDE — LOGO */}
         <div className="flex-shrink-0">
           <h1 className="text-4xl font-semibold">
-            <Link href="/">memo</Link>
+            <Link href="/">memo.</Link>
           </h1>
         </div>
 
